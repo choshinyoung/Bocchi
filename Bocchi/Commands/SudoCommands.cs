@@ -1,20 +1,18 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Discord.Commands;
-using Bocchi.Attributes;
 using Bocchi.Extensions;
 using Bocchi.Interactions;
 using Bocchi.Utility;
 using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 
 namespace Bocchi.Commands;
 
-[Group("sudo")]
-[Order(2)]
+[Group("!sudo")]
 [RequireOwner]
 public class SudoCommands : ModuleBase<SocketCommandContext>
 {
