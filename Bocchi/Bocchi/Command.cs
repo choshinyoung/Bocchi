@@ -5,10 +5,8 @@ namespace Bocchi;
 
 public partial class Command
 {
-    public async Task Call(string? content = null)
+    public async Task Call(string content)
     {
-        content = content ?? Context.Message.Content;
-
         await Context.Channel.TriggerTypingAsync();
 
         await Context.ReplyAsync(await GptController.Talk(content,

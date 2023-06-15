@@ -20,7 +20,7 @@ public static class BocchiManager
         var argPos = 0;
         if (GptController.Prefixes.Any(prefix => message.HasStringPrefix(prefix, ref argPos)))
         {
-            await new Command(context).Call();
+            RunCommand(context);
 
             return;
         }
@@ -28,7 +28,7 @@ public static class BocchiManager
         if (message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos) ||
             message.HasStringPrefix($"<@{Bot.Client.CurrentUser.Id}>", ref argPos))
         {
-            await new Command(context).Call(context.Message.Content[argPos..]);
+            RunCommand(context, context.Message.Content[argPos..]);
 
             return;
         }
@@ -39,8 +39,15 @@ public static class BocchiManager
 
             if (reference.Author.Id == Bot.Client.CurrentUser.Id)
             {
-                await new Command(context).Call();
+                RunCommand(context);
             }
         }
+    }
+
+    private static void RunCommand(SocketCommandContext context, string? content = null)
+    {
+        content ??= context.Message.Content;
+
+        Task.Run(async () => { await new Command(context).Call(content); });
     }
 }
