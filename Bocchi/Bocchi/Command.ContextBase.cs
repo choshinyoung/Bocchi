@@ -1,10 +1,10 @@
 ﻿using Discord.Commands;
 
-namespace Bocchi.Commands;
+namespace Bocchi;
 
-public partial class Bocchi
+public partial class Command
 {
-    public Bocchi(SocketCommandContext context)
+    public Command(SocketCommandContext context)
     {
         Context = context;
     }

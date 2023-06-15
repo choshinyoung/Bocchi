@@ -34,6 +34,7 @@ public static class Bot
 
         await InteractionManager.Initialize();
         await CommandManager.Initialize();
+        await BocchiManager.Initialize();
 
         await Client.LoginAsync(TokenType.Bot, Config.Get("TOKEN"));
         await Client.StartAsync();

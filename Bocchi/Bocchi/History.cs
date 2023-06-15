@@ -1,3 +1,3 @@
-﻿namespace Bocchi.Commands;
+﻿namespace Bocchi;
 
 public readonly record struct History(string Content, bool IsAssistant);

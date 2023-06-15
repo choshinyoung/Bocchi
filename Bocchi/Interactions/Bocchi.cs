@@ -11,6 +11,6 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
         await DeferAsync();
         await Context.Channel.TriggerTypingAsync();
 
-        await Context.FollowupAsync(await BocchiManager.Talk(content));
+        await Context.FollowupAsync(await GptController.Talk(content));
     }
 }

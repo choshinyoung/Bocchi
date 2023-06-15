@@ -1,12 +1,11 @@
-﻿using Bocchi.Commands;
-using Bocchi.Utility;
+﻿using Bocchi.Utility;
 using OpenAI_API;
 using OpenAI_API.Chat;
 using OpenAI_API.Models;
 
 namespace Bocchi;
 
-public static class BocchiManager
+public class GptController
 {
     private static readonly string AssistantMessage = Setting.Get("ASSISTANT_MESSAGE");
 

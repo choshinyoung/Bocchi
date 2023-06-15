@@ -1,15 +1,15 @@
 ﻿using Bocchi.Extensions;
 using Discord;
 
-namespace Bocchi.Commands;
+namespace Bocchi;
 
-public partial class Bocchi
+public partial class Command
 {
     public async Task Call()
     {
         await Context.Channel.TriggerTypingAsync();
 
-        await Context.ReplyAsync(await BocchiManager.Talk(Context.Message.Content,
+        await Context.ReplyAsync(await GptController.Talk(Context.Message.Content,
             await GetHistoriesAsync(Context.Channel, Context.Message.Reference)));
     }
 

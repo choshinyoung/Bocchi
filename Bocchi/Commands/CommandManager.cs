@@ -48,22 +48,12 @@ public static class CommandManager
         SocketCommandContext context = new(Bot.Client, message);
 
         var argPos = 0;
-
-        if (message.HasStringPrefix(Prefix, ref argPos) ||
-            message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos))
+        if (message.HasStringPrefix(Prefix, ref argPos))
         {
             if (Service.Search(context, argPos).IsSuccess)
             {
                 await Service.ExecuteAsync(context, argPos, Bot.Service);
-
-                return;
             }
-        }
-
-        if (BocchiManager.Prefixes.Any(prefix => message.HasStringPrefix(prefix, ref argPos)) ||
-            message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos))
-        {
-            await new Bocchi(context).Call();
         }
     }
 }
