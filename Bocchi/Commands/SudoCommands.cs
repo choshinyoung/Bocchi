@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.Scripting;
 
 namespace Bocchi.Commands;
 
-[Group("!sudo")]
+[Group("sudo")]
 [RequireOwner]
 public class SudoCommands : ModuleBase<SocketCommandContext>
 {

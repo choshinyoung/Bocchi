@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Bocchi.Events;
+using Bocchi.Utility;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -13,6 +14,8 @@ public static class CommandManager
         DefaultRunMode = RunMode.Async,
         LogLevel = Bot.IsDebugMode ? LogSeverity.Debug : LogSeverity.Info
     };
+
+    public static readonly string Prefix = Config.Get("Prefix");
 
     public static readonly CommandService Service = new(CommandConfig);
 
@@ -44,9 +47,23 @@ public static class CommandManager
     {
         SocketCommandContext context = new(Bot.Client, message);
 
-        if (Service.Search(context, 0).IsSuccess)
+        var argPos = 0;
+
+        if (message.HasStringPrefix(Prefix, ref argPos) ||
+            message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos))
         {
-            await Service.ExecuteAsync(context, 0, Bot.Service);
+            if (Service.Search(context, argPos).IsSuccess)
+            {
+                await Service.ExecuteAsync(context, argPos, Bot.Service);
+
+                return;
+            }
+        }
+
+        if (BocchiManager.Prefixes.Any(prefix => message.HasStringPrefix(prefix, ref argPos)) ||
+            message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos))
+        {
+            await new Bocchi(context).Call(message.Content);
         }
     }
 }
