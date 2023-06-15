@@ -18,10 +18,17 @@ public static class BocchiManager
         SocketCommandContext context = new(Bot.Client, message);
 
         var argPos = 0;
-        if (GptController.Prefixes.Any(prefix => message.HasStringPrefix(prefix, ref argPos)) ||
-            message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos))
+        if (GptController.Prefixes.Any(prefix => message.HasStringPrefix(prefix, ref argPos)))
         {
             await new Command(context).Call();
+
+            return;
+        }
+
+        if (message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos) ||
+            message.HasStringPrefix($"<@{Bot.Client.CurrentUser.Id}>", ref argPos))
+        {
+            await new Command(context).Call(context.Message.Content[argPos..]);
 
             return;
         }

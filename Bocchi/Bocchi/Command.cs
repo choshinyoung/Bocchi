@@ -5,11 +5,13 @@ namespace Bocchi;
 
 public partial class Command
 {
-    public async Task Call()
+    public async Task Call(string? content = null)
     {
+        content = content ?? Context.Message.Content;
+
         await Context.Channel.TriggerTypingAsync();
 
-        await Context.ReplyAsync(await GptController.Talk(Context.Message.Content,
+        await Context.ReplyAsync(await GptController.Talk(content,
             await GetHistoriesAsync(Context.Channel, Context.Message.Reference)));
     }
 
