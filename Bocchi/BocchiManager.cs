@@ -1,5 +1,6 @@
 ﻿using Bocchi.Commands;
 using Bocchi.Utility;
+using OpenAI_API;
 using OpenAI_API.Chat;
 using OpenAI_API.Models;
 
@@ -15,6 +16,8 @@ public static class BocchiManager
 
     public static readonly List<string> Prefixes = Setting.GetList<string>("PREFIXES");
 
+    public static readonly OpenAIAPI OpenAi = new(new APIAuthentication(Config.Get("OPENAI_API_KEY")));
+
     public static async Task<string> Talk(string content, List<History>? histories = null)
     {
         return await Request(AssistantMessage + Saying, content, histories);
@@ -27,7 +30,7 @@ public static class BocchiManager
 
     private static async Task<string> Request(string systemMessage, string content, List<History>? histories = null)
     {
-        var chat = OpenAi.Api.Chat.CreateConversation();
+        var chat = OpenAi.Chat.CreateConversation();
         chat.Model = Model.GPT4;
 
         chat.AppendSystemMessage(systemMessage);
