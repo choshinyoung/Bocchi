@@ -1,4 +1,6 @@
-﻿using Bocchi.Utility;
+﻿using Bocchi.Commands;
+using Bocchi.Utility;
+using OpenAI_API.Chat;
 using OpenAI_API.Models;
 
 namespace Bocchi;
@@ -13,9 +15,9 @@ public static class BocchiManager
 
     public static readonly List<string> Prefixes = Setting.GetList<string>("PREFIXES");
 
-    public static async Task<string> Talk(string content)
+    public static async Task<string> Talk(string content, List<History>? histories = null)
     {
-        return await Request(AssistantMessage + Saying, content);
+        return await Request(AssistantMessage + Saying, content, histories);
     }
 
     public static async Task<string> Convert(string content)
@@ -23,12 +25,21 @@ public static class BocchiManager
         return await Request(ConvertSayingMessage + Saying, content);
     }
 
-    private static async Task<string> Request(string systemMessage, string content)
+    private static async Task<string> Request(string systemMessage, string content, List<History>? histories = null)
     {
         var chat = OpenAi.Api.Chat.CreateConversation();
         chat.Model = Model.GPT4;
 
         chat.AppendSystemMessage(systemMessage);
+
+        if (histories != null)
+        {
+            foreach (var history in histories)
+            {
+                chat.AppendMessage(history.IsAssistant ? ChatMessageRole.Assistant : ChatMessageRole.User,
+                    history.Content);
+            }
+        }
 
         chat.AppendUserInput(content);
         var response = await chat.GetResponseFromChatbotAsync();

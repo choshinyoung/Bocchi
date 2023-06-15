@@ -63,7 +63,7 @@ public static class CommandManager
         if (BocchiManager.Prefixes.Any(prefix => message.HasStringPrefix(prefix, ref argPos)) ||
             message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos))
         {
-            await new Bocchi(context).Call(message.Content);
+            await new Bocchi(context).Call();
         }
     }
 }
