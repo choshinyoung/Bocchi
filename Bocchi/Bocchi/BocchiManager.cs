@@ -22,6 +22,18 @@ public static class BocchiManager
             message.HasMentionPrefix(Bot.Client.CurrentUser, ref argPos))
         {
             await new Command(context).Call();
+
+            return;
+        }
+
+        if (message.Reference != null)
+        {
+            var reference = await context.Channel.GetMessageAsync(message.Reference.MessageId.Value);
+
+            if (reference.Author.Id == Bot.Client.CurrentUser.Id)
+            {
+                await new Command(context).Call();
+            }
         }
     }
 }
