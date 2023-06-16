@@ -13,19 +13,39 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
     public async Task Call(string content)
     {
         await DeferAsync();
-        await Context.Channel.TriggerTypingAsync();
 
-        if (await TryTalkAsync(content) is var (isSuccess, output) && isSuccess)
+        if (await TryTalkAsync(content) is (true, var output))
         {
             await Context.FollowupAsync(output!);
+        }
+
+        if (BocchiManager.CheckTrialCount(Context.User.Id) is (true, var isAvailable))
+        {
+            if (isAvailable)
+            {
+                await Context.FollowupAsync(
+                    $"아... 무료 요청 {BocchiManager.TrialCount}개 중에, 그... {BocchiManager.GetTrialCount(Context.User.Id)}개를 사용한 것 같아요...");
+            }
+            else
+            {
+                await Context.FollowupAsync(
+                    "아... 무료 요청을 다 사용하신 거 같아요. 그... `/등록`이라는... 슬래시 커맨드를... 사용해서... OpenAI API 키를 등록하시면... 될 것 같아요...");
+            }
         }
     }
 
     private async Task<(bool isSuccess, string? output)> TryTalkAsync(string content,
         List<History>? histories = null)
     {
+        if (BocchiManager.CheckTrialCount(Context.User.Id) is { isTrial: true, isAvailable: false })
+        {
+            return (false, null);
+        }
+
         try
         {
+            BocchiManager.UpdateTrialCount(Context.User.Id);
+
             return (true, await GptController.TalkAsync(content, histories));
         }
         catch (Exception ex)
@@ -34,7 +54,8 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
                 .WithButton("다시 시도하기", "retry");
 
             var message =
-                await Context.FollowupAsync($"요청 처리 중 오류 발생!\n```{ex.Message}```", component: builder.Build());
+                await Context.FollowupAsync($"아... 그... 요청 처리 중에 오류가 발생한 것 같아요...\n```{ex.Message}```",
+                    component: builder.Build());
 
             var result = await Interactive.NextMessageComponentAsync(x => x.Message.Id == message.Id,
                 timeout: TimeSpan.FromMinutes(1));

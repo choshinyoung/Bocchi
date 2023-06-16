@@ -5,7 +5,7 @@ using Fergun.Interactive;
 
 namespace Bocchi;
 
-public static class BocchiManager
+public static partial class BocchiManager
 {
     public static async Task Initialize()
     {
@@ -51,8 +51,15 @@ public static class BocchiManager
 
         Task.Run(async () =>
         {
-            await new Command(context, (InteractiveService)Bot.Service.GetService(typeof(InteractiveService))!)
-                .Call(content);
+            try
+            {
+                await new Command(context, (InteractiveService)Bot.Service.GetService(typeof(InteractiveService))!)
+                    .Call(content);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         });
     }
 }

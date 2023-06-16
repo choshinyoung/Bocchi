@@ -1,7 +1,7 @@
-﻿using Discord.Interactions;
-using Bocchi.Extensions;
+﻿using Bocchi.Extensions;
 using Bocchi.Interactions;
 using Discord;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -51,16 +51,17 @@ public class InteractionEventHandler : IEventHandler
 
         if (result is { IsSuccess: false, Error: InteractionCommandError.UnmetPrecondition })
         {
-            await socketContext.RespondAsync("You don't have permission to execute this command", true);
+            await socketContext.RespondAsync("아... 이 커..커맨드를 실행할 권한이 없다고... 생각해요...", true);
         }
 
         if (Bot.IsDebugMode)
         {
-            await socketContext.RespondOrFollowupAsync($"Error Occured!\n```{result.ErrorReason}```", true);
+            await socketContext.RespondOrFollowupAsync($"아... 그... 오류가 발생한 것... 같아요...\n```{result.ErrorReason}```",
+                true);
         }
         else
         {
-            await socketContext.RespondOrFollowupAsync("Error Occured!", true);
+            await socketContext.RespondOrFollowupAsync("아... 그... 오류가 발생한 것... 같아요...", true);
         }
     }
 }

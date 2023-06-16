@@ -15,6 +15,20 @@ public partial class Command
         {
             await Context.ReplyAsync(output!);
         }
+
+        if (BocchiManager.CheckTrialCount(Context.User.Id) is (true, var isAvailable))
+        {
+            if (isAvailable)
+            {
+                await Context.ReplyAsync(
+                    $"아... 무료 요청 {BocchiManager.TrialCount}개 중에, 그... {BocchiManager.GetTrialCount(Context.User.Id)}개를 사용한 것 같아요...");
+            }
+            else
+            {
+                await Context.ReplyAsync(
+                    "무료 요청을 다 사용하신 거 같아요... 그... `/등록`이라는... 슬래시 커맨드를... 사용해서... OpenAI API 키를 등록하시면... 될 것 같아요...");
+            }
+        }
     }
 
     private static async Task<List<History>> GetHistoriesAsync(IMessageChannel channel,

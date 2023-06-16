@@ -20,8 +20,15 @@ public partial class Command
     private async Task<(bool isSuccess, string? output)> TryTalkAsync(string content,
         List<History>? histories = null)
     {
+        if (BocchiManager.CheckTrialCount(Context.User.Id) is { isTrial: true, isAvailable: false })
+        {
+            return (false, null);
+        }
+
         try
         {
+            BocchiManager.UpdateTrialCount(Context.User.Id);
+
             return (true, await GptController.TalkAsync(content, histories));
         }
         catch (Exception ex)
@@ -29,7 +36,8 @@ public partial class Command
             var builder = new ComponentBuilder()
                 .WithButton("다시 시도하기", "retry");
 
-            var message = await Context.ReplyAsync($"요청 처리 중 오류 발생!\n```{ex.Message}```", component: builder.Build());
+            var message = await Context.ReplyAsync($"아... 그... 요청 처리 중에 오류가 발생한 것 같아요...\n```{ex.Message}```",
+                component: builder.Build());
 
             var result = await Interactive.NextMessageComponentAsync(x => x.Message.Id == message.Id,
                 timeout: TimeSpan.FromMinutes(1));
