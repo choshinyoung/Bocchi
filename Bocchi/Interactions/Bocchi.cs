@@ -1,4 +1,5 @@
 ﻿using Bocchi.Extensions;
+using Bocchi.Utility.Database;
 using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
@@ -29,7 +30,7 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
             else
             {
                 await Context.FollowupAsync(
-                    "아... 무료 요청을 다 사용하신 거 같아요. 그... `/등록`이라는... 슬래시 커맨드를... 사용해서... OpenAI API 키를 등록하시면... 될 것 같아요...");
+                    "아... 무료 요청을 다 사용하신 거 같아요. 그... `/등록`이라는... 슬래시 커맨드를... 사용해서... OpenAI API 키를 등록하시면... 될 것 같아요...\n키는 다음 페이지에서 생성할 수 있다고... 생각해요...\nhttps://platform.openai.com/account/api-keys");
             }
         }
     }
@@ -46,7 +47,9 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
         {
             BocchiManager.UpdateTrialCount(Context.User.Id);
 
-            return (true, await GptController.TalkAsync(content, histories));
+            var user = DbManager.GetUser(Context.User.Id);
+
+            return (true, await GptController.TalkAsync(content, histories, user.IsTrial ? null : user.OpenAiKey));
         }
         catch (Exception ex)
         {

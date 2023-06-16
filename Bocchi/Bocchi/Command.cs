@@ -26,7 +26,7 @@ public partial class Command
             else
             {
                 await Context.ReplyAsync(
-                    "무료 요청을 다 사용하신 거 같아요... 그... `/등록`이라는... 슬래시 커맨드를... 사용해서... OpenAI API 키를 등록하시면... 될 것 같아요...");
+                    "무료 요청을 다 사용하신 거 같아요... 그... `/등록`이라는... 슬래시 커맨드를... 사용해서... OpenAI API 키를 등록하시면... 될 것 같아요...\n키는 다음 페이지에서 생성할 수 있다고... 생각해요...\nhttps://platform.openai.com/account/api-keys");
             }
         }
     }

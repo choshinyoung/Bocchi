@@ -16,23 +16,18 @@ public class GptController
 
     public static readonly List<string> Prefixes = Setting.GetList<string>("PREFIXES");
 
-    public static readonly OpenAIService OpenAi = new(new OpenAiOptions
+    public static async Task<string> TalkAsync(string content, List<History>? histories = null, string? apiKey = null)
     {
-        ApiKey = Config.Get("OPENAI_API_KEY")
-    });
-
-    public static async Task<string> TalkAsync(string content, List<History>? histories = null)
-    {
-        return await RequestAsync(AssistantMessage + Saying, content, histories);
+        return await RequestAsync(AssistantMessage + Saying, content, histories, apiKey);
     }
 
-    public static async Task<string> ConvertAsync(string content)
+    public static async Task<string> ConvertAsync(string content, string? apiKey = null)
     {
-        return await RequestAsync(ConvertSayingMessage + Saying, content);
+        return await RequestAsync(ConvertSayingMessage + Saying, content, apiKey: apiKey);
     }
 
     private static async Task<string> RequestAsync(string systemMessage, string content,
-        List<History>? histories = null)
+        List<History>? histories = null, string? apiKey = null)
     {
         var messages = new List<ChatMessage>
         {
@@ -49,7 +44,12 @@ public class GptController
 
         messages.Add(ChatMessage.FromUser(content));
 
-        var result = await OpenAi.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+        using var openAi = new OpenAIService(new OpenAiOptions
+        {
+            ApiKey = apiKey ?? Config.Get("OPENAI_API_KEY")
+        });
+
+        var result = await openAi.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
         {
             Messages = messages,
             Model = Models.Gpt_4

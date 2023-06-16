@@ -1,4 +1,5 @@
 ﻿using Bocchi.Extensions;
+using Bocchi.Utility.Database;
 using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
@@ -29,7 +30,9 @@ public partial class Command
         {
             BocchiManager.UpdateTrialCount(Context.User.Id);
 
-            return (true, await GptController.TalkAsync(content, histories));
+            var user = DbManager.GetUser(Context.User.Id);
+
+            return (true, await GptController.TalkAsync(content, histories, user.IsTrial ? null : user.OpenAiKey));
         }
         catch (Exception ex)
         {

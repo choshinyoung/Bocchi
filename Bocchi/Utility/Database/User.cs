@@ -8,7 +8,7 @@ public class User
 
     public bool IsTrial;
 
-    public string? OpenAiToken;
+    public string? OpenAiKey;
     public int UsedFreeRequest;
 
     public ulong UserId;
@@ -18,6 +18,6 @@ public class User
         UserId = userId;
         IsTrial = true;
         UsedFreeRequest = 0;
-        OpenAiToken = null;
+        OpenAiKey = null;
     }
 }
