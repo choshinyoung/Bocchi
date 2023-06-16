@@ -27,7 +27,7 @@ jobs:
           remote: ${{ secrets.REMOTE_TARGET }}
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
-          privateKey: ${{ secrets.REMOTE_SSH_KEY }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
 
       - name: Run SSH command
         uses: garygrossgarten/github-action-ssh@release
@@ -35,4 +35,4 @@ jobs:
           command: pm2 start bocchi
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
-          privateKey: ${{ secrets.REMOTE_SSH_KEY }}
+          password: ${{ secrets.REMOTE_PASSWORD }}
