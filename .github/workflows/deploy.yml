@@ -1,0 +1,38 @@
+﻿name: CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0
+
+      - name: Dotnet Publish
+        run: dotnet publish -c Release -o deploy
+
+      - name: Copy via ssh
+        uses: garygrossgarten/github-action-scp@release
+        with:
+          local: /home/runner/work/Bocchi/deploy/
+          remote: ${{ secrets.REMOTE_TARGET }}
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          privateKey: ${{ secrets.REMOTE_SSH_KEY }}
+
+      - name: Run SSH command
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          command: pm2 start bocchi
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          privateKey: ${{ secrets.REMOTE_SSH_KEY }}
