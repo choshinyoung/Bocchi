@@ -6,5 +6,4 @@ riderModule.iml
 .idea
 *.user
 Bocchi/Data/config.json
-Bocchi/build.bat
 *.DotSettings
