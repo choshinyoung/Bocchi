@@ -21,17 +21,18 @@ public class GptController
         ApiKey = Config.Get("OPENAI_API_KEY")
     });
 
-    public static async Task<string> Talk(string content, List<History>? histories = null)
+    public static async Task<string> TalkAsync(string content, List<History>? histories = null)
     {
-        return await Request(AssistantMessage + Saying, content, histories);
+        return await RequestAsync(AssistantMessage + Saying, content, histories);
     }
 
-    public static async Task<string> Convert(string content)
+    public static async Task<string> ConvertAsync(string content)
     {
-        return await Request(ConvertSayingMessage + Saying, content);
+        return await RequestAsync(ConvertSayingMessage + Saying, content);
     }
 
-    private static async Task<string> Request(string systemMessage, string content, List<History>? histories = null)
+    private static async Task<string> RequestAsync(string systemMessage, string content,
+        List<History>? histories = null)
     {
         var messages = new List<ChatMessage>
         {
@@ -53,6 +54,16 @@ public class GptController
             Messages = messages,
             Model = Models.Gpt_4
         });
+
+        if (!result.Successful)
+        {
+            if (result.Error == null)
+            {
+                throw new Exception("Unknown Error");
+            }
+
+            throw new Exception($"{result.Error.Code}: {result.Error.Message}");
+        }
 
         return result.Choices.First().Message.Content;
     }

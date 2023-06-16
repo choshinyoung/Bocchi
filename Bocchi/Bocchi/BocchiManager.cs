@@ -1,6 +1,7 @@
 ﻿using Bocchi.Events;
 using Discord.Commands;
 using Discord.WebSocket;
+using Fergun.Interactive;
 
 namespace Bocchi;
 
@@ -48,6 +49,10 @@ public static class BocchiManager
     {
         content ??= context.Message.Content;
 
-        Task.Run(async () => { await new Command(context).Call(content); });
+        Task.Run(async () =>
+        {
+            await new Command(context, (InteractiveService)Bot.Service.GetService(typeof(InteractiveService))!)
+                .Call(content);
+        });
     }
 }

@@ -9,8 +9,12 @@ public partial class Command
     {
         await Context.Channel.TriggerTypingAsync();
 
-        await Context.ReplyAsync(await GptController.Talk(content,
-            await GetHistoriesAsync(Context.Channel, Context.Message.Reference)));
+        var history = await GetHistoriesAsync(Context.Channel, Context.Message.Reference);
+
+        if (await TryTalkAsync(content, history) is (true, var output))
+        {
+            await Context.ReplyAsync(output!);
+        }
     }
 
     private static async Task<List<History>> GetHistoriesAsync(IMessageChannel channel,

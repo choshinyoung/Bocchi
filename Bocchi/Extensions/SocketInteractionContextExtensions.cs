@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Discord.Rest;
 
 namespace Bocchi.Extensions;
 
@@ -12,30 +13,31 @@ public static class SocketInteractionContextExtensions
             allowedMentions: disableMention ? AllowedMentions.None : null, components: component);
     }
 
-    public static async Task FollowupAsync(this SocketInteractionContext context, object content,
+    public static async Task<RestFollowupMessage> FollowupAsync(this SocketInteractionContext context, object content,
         bool ephemeral = false, bool disableMention = true, MessageComponent? component = null)
     {
-        await context.Interaction.FollowupAsync(content.ToString(), ephemeral: ephemeral,
+        return await context.Interaction.FollowupAsync(content.ToString(), ephemeral: ephemeral,
             allowedMentions: disableMention ? AllowedMentions.None : null, components: component);
     }
 
-    public static async Task RespondOrFollowupAsync(this SocketInteractionContext context, object content,
+    public static async Task<RestFollowupMessage?> RespondOrFollowupAsync(this SocketInteractionContext context,
+        object content,
         bool ephemeral = false, bool disableMention = true, MessageComponent? component = null)
     {
         if (context.Interaction.HasResponded)
         {
-            await context.FollowupAsync(content, ephemeral, disableMention, component);
+            return await context.FollowupAsync(content, ephemeral, disableMention, component);
         }
-        else
-        {
-            await context.RespondAsync(content, ephemeral, disableMention, component);
-        }
+
+        await context.RespondAsync(content, ephemeral, disableMention, component);
+
+        return null;
     }
 
-    public static async Task SendAsync(this SocketInteractionContext context, object content,
+    public static async Task<RestUserMessage> SendAsync(this SocketInteractionContext context, object content,
         bool disableMention = true, MessageComponent? component = null, MessageReference? messageReference = null)
     {
-        await context.Channel.SendMessageAsync(content.ToString(),
+        return await context.Channel.SendMessageAsync(content.ToString(),
             allowedMentions: disableMention ? AllowedMentions.None : null, components: component,
             messageReference: messageReference);
     }
