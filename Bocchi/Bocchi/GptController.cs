@@ -1,7 +1,8 @@
 ﻿using Bocchi.Utility;
-using OpenAI_API;
-using OpenAI_API.Chat;
-using OpenAI_API.Models;
+using OpenAI;
+using OpenAI.Managers;
+using OpenAI.ObjectModels;
+using OpenAI.ObjectModels.RequestModels;
 
 namespace Bocchi;
 
@@ -15,7 +16,10 @@ public class GptController
 
     public static readonly List<string> Prefixes = Setting.GetList<string>("PREFIXES");
 
-    public static readonly OpenAIAPI OpenAi = new(new APIAuthentication(Config.Get("OPENAI_API_KEY")));
+    public static readonly OpenAIService OpenAi = new(new OpenAiOptions
+    {
+        ApiKey = Config.Get("OPENAI_API_KEY")
+    });
 
     public static async Task<string> Talk(string content, List<History>? histories = null)
     {
@@ -29,23 +33,27 @@ public class GptController
 
     private static async Task<string> Request(string systemMessage, string content, List<History>? histories = null)
     {
-        var chat = OpenAi.Chat.CreateConversation();
-        chat.Model = Model.GPT4;
-
-        chat.AppendSystemMessage(systemMessage);
+        var messages = new List<ChatMessage>
+        {
+            ChatMessage.FromSystem(systemMessage)
+        };
 
         if (histories != null)
         {
-            foreach (var history in histories)
-            {
-                chat.AppendMessage(history.IsAssistant ? ChatMessageRole.Assistant : ChatMessageRole.User,
-                    history.Content);
-            }
+            messages.AddRange(histories.Select(h =>
+                new ChatMessage(
+                    h.IsAssistant ? StaticValues.ChatMessageRoles.Assistant : StaticValues.ChatMessageRoles.User,
+                    h.Content)));
         }
 
-        chat.AppendUserInput(content);
-        var response = await chat.GetResponseFromChatbotAsync();
+        messages.Add(ChatMessage.FromUser(content));
 
-        return response;
+        var result = await OpenAi.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+        {
+            Messages = messages,
+            Model = Models.Gpt_4
+        });
+
+        return result.Choices.First().Message.Content;
     }
 }
