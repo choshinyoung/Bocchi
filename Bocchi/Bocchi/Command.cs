@@ -13,21 +13,23 @@ public partial class Command
 
         if (await TryTalkAsync(content, history) is (true, var output))
         {
-            await Context.ReplyAsync(output!);
-        }
+            if (BocchiManager.CheckTrialCount(Context.User.Id) is (true, var isAvailable))
+            {
+                if (isAvailable)
+                {
+                    await Context.ReplyAsync($"{output!}\n\n" +
+                                             $"아... 무료 요청 {BocchiManager.TrialCount}개 중에, 그... {BocchiManager.GetTrialCount(Context.User.Id)}개를 사용한 것 같아요...");
+                }
+                else
+                {
+                    await Context.ReplyAsync($"{output!}\n\n" +
+                                             "무료 요청을 다 사용하신 거 같아요... 그... `/등록`이라는... 슬래시 커맨드를... 사용해서... OpenAI API 키를 등록하시면... 될 것 같아요...\n키는 다음 페이지에서 생성할 수 있다고... 생각해요...\nhttps://platform.openai.com/account/api-keys");
+                }
 
-        if (BocchiManager.CheckTrialCount(Context.User.Id) is (true, var isAvailable))
-        {
-            if (isAvailable)
-            {
-                await Context.ReplyAsync(
-                    $"아... 무료 요청 {BocchiManager.TrialCount}개 중에, 그... {BocchiManager.GetTrialCount(Context.User.Id)}개를 사용한 것 같아요...");
+                return;
             }
-            else
-            {
-                await Context.ReplyAsync(
-                    "무료 요청을 다 사용하신 거 같아요... 그... `/등록`이라는... 슬래시 커맨드를... 사용해서... OpenAI API 키를 등록하시면... 될 것 같아요...\n키는 다음 페이지에서 생성할 수 있다고... 생각해요...\nhttps://platform.openai.com/account/api-keys");
-            }
+
+            await Context.ReplyAsync(output!);
         }
     }
 

@@ -4,7 +4,7 @@ namespace Bocchi;
 
 public static partial class BocchiManager
 {
-    public const int TrialCount = 10;
+    public const int TrialCount = 5;
 
     public static (bool isTrial, bool isAvailable) CheckTrialCount(ulong userId)
     {
