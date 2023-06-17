@@ -51,52 +51,51 @@ public class GptController
 
     private static async Task<string> RequestMessagesAsync(List<ChatMessage> messages, string? apiKey)
     {
-        using var openAi = new OpenAIService(new OpenAiOptions
-        {
-            ApiKey = apiKey ?? Config.Get("OPENAI_API_KEY")
-        });
+        using var openAi = new OpenAIService(new OpenAiOptions { ApiKey = apiKey ?? Config.Get("OPENAI_API_KEY") });
 
-        var response = await openAi.CreateCompletionWithFunction(new ChatCompletionWithFunctionCreateRequest
+        for (var stackCount = 0; stackCount < 10; stackCount++)
         {
-            Messages = messages,
-            Model = "gpt-4-0613",
-            Functions = new List<Function>
+            var response = await openAi.CreateCompletionWithFunction(new ChatCompletionWithFunctionCreateRequest
             {
-                new()
+                Messages = messages, Model = "gpt-4-0613",
+                Functions = new List<Function>
                 {
-                    Name = "GetDateTime",
-                    Description = "Get current date and time, e.g. '2023년 6월 17일 토요일 오후 5:27:36'",
-                    Parameters = new Parameters
+                    new()
                     {
-                        ValueType = "object",
-                        Properties = new Dictionary<string, Property>()
+                        Name = "GetDateTime",
+                        Description = "Get current date and time, e.g. '2023년 6월 17일 토요일 오후 5:27:36'",
+                        Parameters = new Parameters
+                            { ValueType = "object", Properties = new Dictionary<string, Property>() }
                     }
                 }
-            }
-        });
+            });
 
-        if (!response.Successful)
-        {
-            if (response.Error == null)
+            if (!response.Successful)
             {
-                throw new Exception("Unknown Error");
+                if (response.Error == null)
+                {
+                    throw new Exception("Unknown Error");
+                }
+
+                throw new Exception($"{response.Error.Code}: {response.Error.Message}");
             }
 
-            throw new Exception($"{response.Error.Code}: {response.Error.Message}");
+            var result = response.Choices.First();
+
+            if (result.FinishReason == "function_call")
+            {
+                if (result.Message.FunctionCall!.Name == "GetDateTime")
+                {
+                    messages.Add(
+                        ChatMessage.FromFunction(DateTimeUtility.GetKstDateTime().ToString("F"), "GetDateTime"));
+
+                    continue;
+                }
+            }
+
+            return result.Message.Content!;
         }
 
-        var result = response.Choices.First();
-
-        if (result.FinishReason == "function_call")
-        {
-            if (result.Message.FunctionCall!.Name == "GetDateTime")
-            {
-                messages.Add(ChatMessage.FromFunction(DateTimeUtility.GetKstDateTime().ToString("F"), "GetDateTime"));
-
-                return await RequestMessagesAsync(messages, apiKey);
-            }
-        }
-
-        return result.Message.Content!;
+        throw new Exception("Too many function recall occured.");
     }
 }
