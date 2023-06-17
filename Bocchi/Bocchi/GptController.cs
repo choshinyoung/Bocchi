@@ -91,7 +91,7 @@ public class GptController
         {
             if (result.Message.FunctionCall!.Name == "GetDateTime")
             {
-                messages.Add(ChatMessage.FromFunction(DateTime.Now.ToString("F"), "GetDateTime"));
+                messages.Add(ChatMessage.FromFunction(DateTimeUtility.GetKstDateTime().ToString("F"), "GetDateTime"));
 
                 return await RequestMessagesAsync(messages, apiKey);
             }
