@@ -39,6 +39,8 @@ public partial class Command
             var builder = new ComponentBuilder()
                 .WithButton("다시 시도하기", "retry");
 
+            Console.WriteLine(ex);
+
             var message = await Context.ReplyAsync($"아... 그... 요청 처리 중에 오류가 발생한 것 같아요...\n```{ex.Message}```",
                 component: builder.Build());
 

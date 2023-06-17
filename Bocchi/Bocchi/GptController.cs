@@ -1,8 +1,10 @@
-﻿using Bocchi.Utility;
+﻿using Bocchi.Extensions.OpenAi;
+using Bocchi.Extensions.OpenAi.Models.Request;
+using Bocchi.Extensions.OpenAi.Models.Response;
+using Bocchi.Utility;
 using OpenAI;
 using OpenAI.Managers;
 using OpenAI.ObjectModels;
-using OpenAI.ObjectModels.RequestModels;
 
 namespace Bocchi;
 
@@ -44,27 +46,57 @@ public class GptController
 
         messages.Add(ChatMessage.FromUser(content));
 
+        return await RequestMessagesAsync(messages, apiKey);
+    }
+
+    private static async Task<string> RequestMessagesAsync(List<ChatMessage> messages, string? apiKey)
+    {
         using var openAi = new OpenAIService(new OpenAiOptions
         {
             ApiKey = apiKey ?? Config.Get("OPENAI_API_KEY")
         });
 
-        var result = await openAi.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+        var response = await openAi.CreateCompletionWithFunction(new ChatCompletionWithFunctionCreateRequest
         {
             Messages = messages,
-            Model = Models.Gpt_4
+            Model = "gpt-4-0613",
+            Functions = new List<Function>
+            {
+                new()
+                {
+                    Name = "GetDateTime",
+                    Description = "Get current date and time, e.g. '2023년 6월 17일 토요일 오후 5:27:36'",
+                    Parameters = new Parameters
+                    {
+                        ValueType = "object",
+                        Properties = new Dictionary<string, Property>()
+                    }
+                }
+            }
         });
 
-        if (!result.Successful)
+        if (!response.Successful)
         {
-            if (result.Error == null)
+            if (response.Error == null)
             {
                 throw new Exception("Unknown Error");
             }
 
-            throw new Exception($"{result.Error.Code}: {result.Error.Message}");
+            throw new Exception($"{response.Error.Code}: {response.Error.Message}");
         }
 
-        return result.Choices.First().Message.Content;
+        var result = response.Choices.First();
+
+        if (result.FinishReason == "function_call")
+        {
+            if (result.Message.FunctionCall!.Name == "GetDateTime")
+            {
+                messages.Add(ChatMessage.FromFunction(DateTime.Now.ToString("F"), "GetDateTime"));
+
+                return await RequestMessagesAsync(messages, apiKey);
+            }
+        }
+
+        return result.Message.Content!;
     }
 }
