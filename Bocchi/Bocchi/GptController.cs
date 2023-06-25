@@ -1,10 +1,8 @@
-﻿using Bocchi.Extensions.OpenAi;
-using Bocchi.Extensions.OpenAi.Models.Request;
-using Bocchi.Extensions.OpenAi.Models.Response;
-using Bocchi.Utility;
+﻿using Bocchi.Utility;
 using OpenAI;
 using OpenAI.Managers;
 using OpenAI.ObjectModels;
+using OpenAI.ObjectModels.RequestModels;
 
 namespace Bocchi;
 
@@ -55,19 +53,13 @@ public class GptController
 
         for (var stackCount = 0; stackCount < 10; stackCount++)
         {
-            var response = await openAi.CreateCompletionWithFunction(new ChatCompletionWithFunctionCreateRequest
+            var functions = BocchiManager.FunctionManager.Functions.Select(f => f.Function).ToList();
+
+            var response = await openAi.CreateCompletion(new ChatCompletionCreateRequest
             {
-                Messages = messages, Model = "gpt-4-0613",
-                Functions = new List<Function>
-                {
-                    new()
-                    {
-                        Name = "GetDateTime",
-                        Description = "Get current date and time, e.g. '2023년 6월 17일 토요일 오후 5:27:36'",
-                        Parameters = new Parameters
-                            { ValueType = "object", Properties = new Dictionary<string, Property>() }
-                    }
-                }
+                Messages = messages,
+                Model = "gpt-4-0613",
+                Functions = functions
             });
 
             if (!response.Successful)
@@ -84,16 +76,20 @@ public class GptController
 
             if (result.FinishReason == "function_call")
             {
-                if (result.Message.FunctionCall!.Name == "GetDateTime")
-                {
-                    messages.Add(
-                        ChatMessage.FromFunction(DateTimeUtility.GetKstDateTime().ToString("F"), "GetDateTime"));
+                var function = BocchiManager.FunctionManager.SearchFunction(result.Message.FunctionCall!.Name!);
 
-                    continue;
+                if (function is null)
+                {
+                    throw new Exception($"Function {result.Message.FunctionCall!.Name} not exists.");
                 }
+
+                messages.Add(ChatMessage.FromFunction(
+                    await BocchiManager.FunctionManager.ExecuteFunction(result.Message.FunctionCall!), function.Name));
+
+                continue;
             }
 
-            return result.Message.Content!;
+            return result.Message.Content;
         }
 
         throw new Exception("Too many function recall occured.");

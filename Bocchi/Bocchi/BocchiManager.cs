@@ -1,4 +1,5 @@
 ﻿using Bocchi.Events;
+using Bocchi.Functions;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
@@ -7,9 +8,12 @@ namespace Bocchi;
 
 public static partial class BocchiManager
 {
+    public static readonly FunctionManager FunctionManager = new();
+
     public static async Task Initialize()
     {
         BocchiEventHandler.Register();
+        FunctionManager.LoadFunctions();
 
         await Task.CompletedTask;
     }

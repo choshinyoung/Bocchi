@@ -30,6 +30,9 @@ public class HotReloadHandler
             await CommandManager.LoadModulesAsync();
         }
 
+        BocchiManager.FunctionManager.UnloadFunctions();
+        BocchiManager.FunctionManager.LoadFunctions();
+
         Console.WriteLine("Reload complete.");
     }
 }

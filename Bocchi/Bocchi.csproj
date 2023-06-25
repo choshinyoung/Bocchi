@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Betalgo.OpenAI" Version="7.0.0" />
+        <PackageReference Include="Betalgo.OpenAI" Version="7.1.2-beta" />
         <PackageReference Include="Discord.Net" Version="3.10.0" />
         <PackageReference Include="Fergun.Interactive" Version="1.7.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.5.0" />
