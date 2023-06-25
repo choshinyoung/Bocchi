@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Bocchi.Functions.Attributes;
@@ -52,7 +53,7 @@ public class FunctionManager
 
                 functionBuilder.AddParameter(
                     parameter.Name!,
-                    (paramAttribute?.Type ?? parameter.ParameterType.Name).ToLower(),
+                    FindType(parameter.ParameterType),
                     paramAttribute?.Description,
                     enumAttribute?.Enums,
                     parameter.IsOptional
@@ -93,7 +94,7 @@ public class FunctionManager
             function.Method.DeclaringType!.GetConstructor(Array.Empty<Type>())!.Invoke(Array.Empty<object>());
 
         var methodParameters = function.Method.GetParameters();
-        var argumentNode = JsonNode.Parse(call.Arguments!)!;
+        var arguments = JsonNode.Parse(call.Arguments!)!;
         var parameterValues = new List<object>();
 
         if (function.Function.Parameters!.Properties is not null)
@@ -103,7 +104,7 @@ public class FunctionManager
                     .Select((_, i) =>
                         function.Function.Parameters.Properties.ToList()[i])
                     .Select((param, j) =>
-                        argumentNode[param.Key]!.Deserialize(methodParameters[j].ParameterType)!));
+                        arguments[param.Key]!.Deserialize(methodParameters[j].ParameterType)!));
         }
 
         var result = function.Method.Invoke(moduleBase, parameterValues.ToArray());
@@ -116,5 +117,23 @@ public class FunctionManager
         }
 
         return result?.ToString() ?? "";
+    }
+
+    private static string FindType(Type type)
+    {
+        return type switch
+        {
+            _ when type == typeof(byte) || type == typeof(sbyte) ||
+                   type == typeof(short) || type == typeof(ushort) ||
+                   type == typeof(int) || type == typeof(uint) ||
+                   type == typeof(long) || type == typeof(ulong) ||
+                   type == typeof(float) || type == typeof(double) ||
+                   type == typeof(decimal) => "number",
+            _ when type == typeof(string) => "string",
+            _ when type == typeof(bool) => "boolean",
+            _ when type == typeof(IEnumerable) => "array",
+            null => "null",
+            _ => "object"
+        };
     }
 }

@@ -4,11 +4,9 @@
 public class ParamAttribute : Attribute
 {
     public string? Description;
-    public string? Type;
 
-    public ParamAttribute(string? description = null, string? type = null)
+    public ParamAttribute(string? description = null)
     {
         Description = description;
-        Type = type;
     }
 }
