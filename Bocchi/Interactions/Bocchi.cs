@@ -1,4 +1,5 @@
 ﻿using Bocchi.Extensions;
+using Bocchi.Functions;
 using Bocchi.Utility.Database;
 using Discord;
 using Discord.Interactions;
@@ -51,7 +52,17 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
 
             var user = DbManager.GetUser(Context.User.Id);
 
-            return (true, await GptController.TalkAsync(content, histories, user.IsTrial ? null : user.OpenAiKey));
+            var context = new FunctionContext
+            {
+                History = Array.Empty<History>(),
+                User = Context.User,
+                Channel = Context.Channel,
+                Guild = Context.Guild,
+                Interaction = Context.Interaction
+            };
+
+            return (true,
+                await GptController.TalkAsync(content, context, histories, user.IsTrial ? null : user.OpenAiKey));
         }
         catch (Exception ex)
         {

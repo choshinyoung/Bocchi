@@ -1,4 +1,5 @@
-﻿using Bocchi.Utility;
+﻿using Bocchi.Functions;
+using Bocchi.Utility;
 using OpenAI;
 using OpenAI.Managers;
 using OpenAI.ObjectModels;
@@ -16,17 +17,18 @@ public class GptController
 
     public static readonly List<string> Prefixes = Setting.GetList<string>("PREFIXES");
 
-    public static async Task<string> TalkAsync(string content, List<History>? histories = null, string? apiKey = null)
+    public static async Task<string> TalkAsync(string content, FunctionContext context, List<History>? histories = null,
+        string? apiKey = null)
     {
-        return await RequestAsync(AssistantMessage + Saying, content, histories, apiKey);
+        return await RequestAsync(AssistantMessage + Saying, content, context, histories, apiKey);
     }
 
-    public static async Task<string> ConvertAsync(string content, string? apiKey = null)
+    public static async Task<string> ConvertAsync(string content, FunctionContext context, string? apiKey = null)
     {
-        return await RequestAsync(ConvertSayingMessage + Saying, content, apiKey: apiKey);
+        return await RequestAsync(ConvertSayingMessage + Saying, content, context, apiKey: apiKey);
     }
 
-    private static async Task<string> RequestAsync(string systemMessage, string content,
+    private static async Task<string> RequestAsync(string systemMessage, string content, FunctionContext context,
         List<History>? histories = null, string? apiKey = null)
     {
         var messages = new List<ChatMessage>
@@ -44,10 +46,11 @@ public class GptController
 
         messages.Add(ChatMessage.FromUser(content));
 
-        return await RequestMessagesAsync(messages, apiKey);
+        return await RequestMessagesAsync(messages, apiKey, context);
     }
 
-    private static async Task<string> RequestMessagesAsync(List<ChatMessage> messages, string? apiKey)
+    private static async Task<string> RequestMessagesAsync(List<ChatMessage> messages, string? apiKey,
+        FunctionContext context)
     {
         using var openAi = new OpenAIService(new OpenAiOptions { ApiKey = apiKey ?? Config.Get("OPENAI_API_KEY") });
 
@@ -76,6 +79,9 @@ public class GptController
 
             if (result.FinishReason == "function_call")
             {
+                result.Message.Content ??= "";
+                messages.Add(result.Message);
+
                 var function = BocchiManager.FunctionManager.SearchFunction(result.Message.FunctionCall!.Name!);
 
                 if (function is null)
@@ -84,7 +90,8 @@ public class GptController
                 }
 
                 messages.Add(ChatMessage.FromFunction(
-                    await BocchiManager.FunctionManager.ExecuteFunction(result.Message.FunctionCall!), function.Name));
+                    await BocchiManager.FunctionManager.ExecuteFunction(result.Message.FunctionCall!, context),
+                    function.Name));
 
                 continue;
             }

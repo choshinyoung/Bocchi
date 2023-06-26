@@ -9,8 +9,6 @@ namespace Bocchi.Functions;
 
 public class FunctionManager
 {
-    private static readonly TypeInfo ModuleTypeInfo = typeof(FunctionContext).GetTypeInfo();
-
     public List<FunctionInfo> Functions;
 
     public FunctionManager()
@@ -25,7 +23,7 @@ public class FunctionManager
         var types = assembly.DefinedTypes
             .Where(type => type.IsPublic || type.IsNestedPublic)
             .Where(
-                type => ModuleTypeInfo.IsAssignableFrom(type) &&
+                type => typeof(FunctionModuleBase<FunctionContext>).IsAssignableFrom(type) &&
                         type is { IsAbstract: false, ContainsGenericParameters: false }
             )
             .ToList();
@@ -83,7 +81,7 @@ public class FunctionManager
         return null;
     }
 
-    public async Task<string> ExecuteFunction(FunctionCall call)
+    public async Task<string> ExecuteFunction(FunctionCall call, FunctionContext context)
     {
         if (Functions.Find(f => f.Function.Name == call.Name) is not (not null and var function))
         {
@@ -91,7 +89,10 @@ public class FunctionManager
         }
 
         var moduleBase =
-            function.Method.DeclaringType!.GetConstructor(Array.Empty<Type>())!.Invoke(Array.Empty<object>());
+            (function.Method.DeclaringType!.GetConstructor(Array.Empty<Type>())!.Invoke(Array.Empty<object>())
+                as FunctionModuleBase<FunctionContext>)!;
+
+        moduleBase.Context = context;
 
         var methodParameters = function.Method.GetParameters();
         var arguments = JsonNode.Parse(call.Arguments!)!;
@@ -109,11 +110,10 @@ public class FunctionManager
 
         var result = function.Method.Invoke(moduleBase, parameterValues.ToArray());
 
-        if (result is Task<object> resultTask)
+        if (result is not null && result.GetType().IsGenericType &&
+            result.GetType().GetGenericTypeDefinition() == typeof(Task<>))
         {
-            await resultTask.ConfigureAwait(false);
-
-            return resultTask.Result.ToString() ?? "";
+            return result.GetType().GetProperty("Result")?.GetValue(result)?.ToString() ?? "";
         }
 
         return result?.ToString() ?? "";
