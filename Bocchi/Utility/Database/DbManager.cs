@@ -7,13 +7,14 @@ public static class DbManager
 {
     private const string DbName = "bocchiDb";
 
-    public static readonly MongoClient Client =
+    private static readonly MongoClient Client =
         new(
-            $"mongodb://{Config.Get("MONGODB_USERNAME")}:{Config.Get("MONGODB_PASSWORD")}@localhost?authSource={DbName}");
+            $"mongodb://{Config.Get("MONGODB_USERNAME")}:{Config.Get("MONGODB_PASSWORD")}@localhost?authSource={DbName}"
+        );
 
-    public static readonly MongoDatabaseBase Db = (MongoDatabaseBase)Client.GetDatabase(DbName);
+    private static readonly MongoDatabaseBase Db = (MongoDatabaseBase)Client.GetDatabase(DbName);
 
-    public static readonly IMongoCollection<User> Users = Db.GetCollection<User>("Users");
+    private static readonly IMongoCollection<User> Users = Db.GetCollection<User>("Users");
 
     public static User GetUser(ulong id)
     {

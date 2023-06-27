@@ -9,25 +9,29 @@ namespace Bocchi.Functions;
 
 public class FunctionManager
 {
-    public List<FunctionInfo> Functions;
-
-    public FunctionManager()
-    {
-        Functions = new List<FunctionInfo>();
-    }
+    public List<FunctionInfo> Functions = new();
 
     public void LoadFunctions()
     {
         var assembly = Assembly.GetEntryAssembly()!;
+        var types = FilterAssemblyTypes(assembly);
 
-        var types = assembly.DefinedTypes
+        LoadFunctionsFromTypes(types);
+    }
+
+    private static IEnumerable<TypeInfo> FilterAssemblyTypes(Assembly assembly)
+    {
+        return assembly.DefinedTypes
             .Where(type => type.IsPublic || type.IsNestedPublic)
             .Where(
-                type => typeof(FunctionModuleBase<FunctionContext>).IsAssignableFrom(type) &&
-                        type is { IsAbstract: false, ContainsGenericParameters: false }
+                type => typeof(FunctionModuleBase<FunctionContext>).IsAssignableFrom(type)
+                        && type is { IsAbstract: false, ContainsGenericParameters: false }
             )
             .ToList();
+    }
 
+    private void LoadFunctionsFromTypes(IEnumerable<TypeInfo> types)
+    {
         foreach (var method in types.SelectMany(type => type.GetMethods()))
         {
             var functionAttribute =
@@ -38,32 +42,39 @@ public class FunctionManager
                 continue;
             }
 
-            var functionBuilder = new FunctionDefinitionBuilder(functionAttribute.Name, functionAttribute.Description);
-
-            foreach (var parameter in method.GetParameters())
-            {
-                var enumAttribute =
-                    parameter.GetCustomAttributes(typeof(EnumValueAttribute)).FirstOrDefault() as
-                        EnumValueAttribute;
-                var paramAttribute =
-                    parameter.GetCustomAttributes(typeof(ParamAttribute)).FirstOrDefault() as
-                        ParamAttribute;
-
-                functionBuilder.AddParameter(
-                    parameter.Name!,
-                    FindType(parameter.ParameterType),
-                    paramAttribute?.Description,
-                    enumAttribute?.Enums,
-                    parameter.IsOptional
-                );
-            }
-
-            var function = functionBuilder.Build();
-            function.Parameters ??= new FunctionParameters();
-            function.Parameters.Properties ??= new Dictionary<string, FunctionParameterPropertyValue>();
-
-            Functions.Add(new FunctionInfo(function, method));
+            LoadFunction(method, functionAttribute);
         }
+    }
+
+    private void LoadFunction(MethodInfo method, FunctionAttribute functionAttribute)
+    {
+        var functionBuilder = new FunctionDefinitionBuilder(functionAttribute.Name, functionAttribute.Description);
+
+        foreach (var parameter in method.GetParameters())
+        {
+            var enumAttribute =
+                parameter.GetCustomAttributes(typeof(EnumValueAttribute)).FirstOrDefault() as EnumValueAttribute;
+            var paramAttribute =
+                parameter.GetCustomAttributes(typeof(ParamAttribute)).FirstOrDefault() as ParamAttribute;
+
+            functionBuilder.AddParameter(
+                parameter.Name!,
+                FindType(parameter.ParameterType),
+                paramAttribute?.Description,
+                enumAttribute?.Enums,
+                parameter.IsOptional
+            );
+        }
+
+        var function = functionBuilder.Build();
+        InitializePropertiesIfNull(function);
+        Functions.Add(new FunctionInfo(function, method));
+    }
+
+    private static void InitializePropertiesIfNull(FunctionDefinition function)
+    {
+        function.Parameters ??= new FunctionParameters();
+        function.Parameters.Properties ??= new Dictionary<string, FunctionParameterPropertyValue>();
     }
 
     public void UnloadFunctions()
@@ -71,49 +82,68 @@ public class FunctionManager
         Functions = new List<FunctionInfo>();
     }
 
-    public FunctionDefinition? SearchFunction(string function)
+    public FunctionDefinition? SearchFunction(string functionName)
     {
-        if (Functions.Find(f => f.Function.Name == function) is not null and var result)
-        {
-            return result.Function;
-        }
-
-        return null;
+        return Functions.FirstOrDefault(f => f.Function.Name == functionName)?.Function;
     }
 
     public async Task<string> ExecuteFunction(FunctionCall call, FunctionContext context)
     {
-        if (Functions.Find(f => f.Function.Name == call.Name) is not (not null and var function))
+        var function = Functions.Find(f => f.Function.Name == call.Name);
+
+        if (function is null)
         {
-            throw new Exception($"Function {call.Name} not exists.");
+            throw new Exception($"Function {call.Name} does not exist.");
         }
 
-        var moduleBase =
-            (function.Method.DeclaringType!.GetConstructor(Array.Empty<Type>())!.Invoke(Array.Empty<object>())
-                as FunctionModuleBase<FunctionContext>)!;
+        var moduleInstance = InstantiateModule(function)!;
+        moduleInstance.Context = context;
 
-        moduleBase.Context = context;
+        var parameterValues = ExtractParameterValues(call, function);
+
+        var result = function.Method.Invoke(moduleInstance, parameterValues.ToArray());
+        return GetResultString(result);
+    }
+
+    private static FunctionModuleBase<FunctionContext>? InstantiateModule(FunctionInfo function)
+    {
+        return function.Method.DeclaringType!
+            .GetConstructor(Type.EmptyTypes)!
+            .Invoke(Array.Empty<object>()) as FunctionModuleBase<FunctionContext>;
+    }
+
+    private static List<object> ExtractParameterValues(FunctionCall call, FunctionInfo function)
+    {
+        var parameterValues = new List<object>();
+
+        if (function.Function.Parameters?.Properties is null)
+        {
+            return parameterValues;
+        }
 
         var methodParameters = function.Method.GetParameters();
         var arguments = JsonNode.Parse(call.Arguments!)!;
-        var parameterValues = new List<object>();
 
-        if (function.Function.Parameters!.Properties is not null)
+        parameterValues.AddRange(
+            function.Function.Parameters.Properties
+                .Select((_, i) =>
+                    function.Function.Parameters.Properties.ToList()[i])
+                .Select((param, j) =>
+                    arguments[param.Key].Deserialize(methodParameters[j].ParameterType))!);
+
+        return parameterValues;
+    }
+
+    private static string GetResultString(object? result)
+    {
+        if (result is null)
         {
-            parameterValues.AddRange(
-                function.Function.Parameters.Properties
-                    .Select((_, i) =>
-                        function.Function.Parameters.Properties.ToList()[i])
-                    .Select((param, j) =>
-                        arguments[param.Key]!.Deserialize(methodParameters[j].ParameterType)!));
+            return "";
         }
 
-        var result = function.Method.Invoke(moduleBase, parameterValues.ToArray());
-
-        if (result is not null && result.GetType().IsGenericType &&
-            result.GetType().GetGenericTypeDefinition() == typeof(Task<>))
+        if (result.GetType().IsGenericType && result.GetType().GetGenericTypeDefinition() == typeof(Task<>))
         {
-            return result.GetType().GetProperty("Result")?.GetValue(result)?.ToString() ?? "";
+            result = result.GetType().GetProperty("Result")?.GetValue(result);
         }
 
         return result?.ToString() ?? "";

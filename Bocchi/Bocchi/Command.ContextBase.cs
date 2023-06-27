@@ -1,5 +1,6 @@
 ﻿using Bocchi.Extensions;
 using Bocchi.Functions;
+using Bocchi.Utility;
 using Bocchi.Utility.Database;
 using Discord;
 using Discord.Commands;
@@ -19,53 +20,58 @@ public partial class Command
 
     private SocketCommandContext Context { get; }
 
-    private async Task<(bool isSuccess, string? output)> TryTalkAsync(string content,
-        List<History>? histories = null)
+    private async Task<(bool isSuccess, string? output)> TryTalkAsync(string content, List<History>? histories = null)
     {
         if (BocchiManager.CheckTrialCount(Context.User.Id) is { isTrial: true, isAvailable: false })
         {
             return (false, null);
         }
 
+        BocchiManager.UpdateTrialCount(Context.User.Id);
+        var user = DbManager.GetUser(Context.User.Id);
+
+        var context = new FunctionContext
+        {
+            History = histories?.ToArray() ?? Array.Empty<History>(),
+            User = Context.User,
+            Channel = Context.Channel,
+            Guild = Context.Guild,
+            Message = Context.Message
+        };
+
         try
         {
-            BocchiManager.UpdateTrialCount(Context.User.Id);
-
-            var user = DbManager.GetUser(Context.User.Id);
-
-            var context = new FunctionContext
-            {
-                History = histories?.ToArray() ?? Array.Empty<History>(),
-                User = Context.User,
-                Channel = Context.Channel,
-                Guild = Context.Guild,
-                Message = Context.Message
-            };
-
-            return (true,
-                await GptController.TalkAsync(content, context, histories, user.IsTrial ? null : user.OpenAiKey));
+            var response =
+                await GptController.TalkAsync(content, context, histories, user.IsTrial ? null : user.OpenAiKey);
+            return (true, response);
         }
         catch (Exception ex)
         {
-            var builder = new ComponentBuilder()
-                .WithButton("다시 시도하기", "retry");
-
-            Console.WriteLine(ex);
-
-            var message = await Context.ReplyAsync($"아... 그... 요청 처리 중에 오류가 발생한 것 같아요...\n```{ex.Message}```",
-                component: builder.Build());
-
-            var result = await Interactive.NextMessageComponentAsync(x => x.Message.Id == message.Id,
-                timeout: TimeSpan.FromMinutes(1));
-
-            if (result.IsSuccess)
-            {
-                await result.Value.DeferAsync();
-
-                await TryTalkAsync(content, histories);
-            }
+            await HandleExceptionAsync(ex, content, histories);
         }
 
         return (false, null);
+    }
+
+    private async Task HandleExceptionAsync(Exception ex, string content, List<History>? histories)
+    {
+        var builder = new ComponentBuilder()
+            .WithButton("다시 시도하기", "retry");
+
+        var message = await Context.ReplyAsync(
+            $"{StaticMessages.ErrorMessage}\n```{ex.Message}```",
+            component: builder.Build()
+        );
+
+        var result = await Interactive.NextMessageComponentAsync(
+            x => x.Message.Id == message.Id,
+            timeout: TimeSpan.FromMinutes(1)
+        );
+
+        if (result.IsSuccess)
+        {
+            await result.Value.DeferAsync();
+            await TryTalkAsync(content, histories);
+        }
     }
 }

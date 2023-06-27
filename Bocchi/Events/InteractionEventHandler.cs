@@ -1,5 +1,6 @@
 ﻿using Bocchi.Extensions;
 using Bocchi.Interactions;
+using Bocchi.Utility;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -49,19 +50,14 @@ public class InteractionEventHandler : IEventHandler
 
         var socketContext = (context as SocketInteractionContext)!;
 
-        if (result is { IsSuccess: false, Error: InteractionCommandError.UnmetPrecondition })
-        {
-            await socketContext.RespondAsync("아... 이 커..커맨드를 실행할 권한이 없다고... 생각해요...", true);
-        }
-
         if (Bot.IsDebugMode)
         {
-            await socketContext.RespondOrFollowupAsync($"아... 그... 오류가 발생한 것... 같아요...\n```{result.ErrorReason}```",
+            await socketContext.RespondOrFollowupAsync($"{StaticMessages.ErrorMessage}\n```{result.ErrorReason}```",
                 true);
         }
         else
         {
-            await socketContext.RespondOrFollowupAsync("아... 그... 오류가 발생한 것... 같아요...", true);
+            await socketContext.RespondOrFollowupAsync(StaticMessages.ErrorMessage, true);
         }
     }
 }

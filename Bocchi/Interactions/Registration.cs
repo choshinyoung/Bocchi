@@ -1,4 +1,5 @@
-﻿using Bocchi.Utility.Database;
+﻿using Bocchi.Utility;
+using Bocchi.Utility.Database;
 using Discord.Interactions;
 using OpenAI;
 using OpenAI.Managers;
@@ -22,7 +23,7 @@ public class Registration : InteractionModuleBase<SocketInteractionContext>
 
         if (!await ValidateKey(modal.Key))
         {
-            await FollowupAsync("아... 키가... 그... 올바르지 않다고... 생각해요...");
+            await FollowupAsync(StaticMessages.InvalidKeyMessage);
 
             return;
         }
@@ -34,10 +35,10 @@ public class Registration : InteractionModuleBase<SocketInteractionContext>
         DbManager.SetUser(Context.User.Id, u => u.OpenAiKey!, user.OpenAiKey);
         DbManager.SetUser(Context.User.Id, u => u.IsTrial, user.IsTrial);
 
-        await FollowupAsync("저... 키를 업데이트했다고... 생각해요...");
+        await FollowupAsync(StaticMessages.KeyUpdatedMessage);
     }
 
-    private async Task<bool> ValidateKey(string? key)
+    private static async Task<bool> ValidateKey(string? key)
     {
         if (key is null)
         {
@@ -55,9 +56,9 @@ public class Registration : InteractionModuleBase<SocketInteractionContext>
             {
                 Messages = new List<ChatMessage>
                 {
-                    ChatMessage.FromUser("안녕하세요!")
+                    ChatMessage.FromUser("안녕하세요")
                 },
-                Model = Models.ChatGpt3_5Turbo
+                Model = Models.Gpt_3_5_Turbo
             });
 
             return result.Successful;
