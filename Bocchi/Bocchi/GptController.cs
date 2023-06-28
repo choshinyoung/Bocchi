@@ -74,7 +74,7 @@ public class GptController
         var response = await openAi.CreateCompletion(new ChatCompletionCreateRequest
         {
             Messages = messages,
-            Model = Models.Gpt_4_0613,
+            Model = Models.Gpt_3_5_Turbo_0613,
             Functions = functions
         });
 

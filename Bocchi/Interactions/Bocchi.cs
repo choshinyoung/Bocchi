@@ -71,13 +71,12 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(content, histories, ex);
+            return await HandleExceptionAsync(content, histories, ex);
         }
-
-        return (false, null);
     }
 
-    private async Task HandleExceptionAsync(string content, List<History>? histories, Exception ex)
+    private async Task<(bool isSuccess, string? output)> HandleExceptionAsync(string content, List<History>? histories,
+        Exception ex)
     {
         var builder = new ComponentBuilder()
             .WithButton("다시 시도하기", "retry");
@@ -92,10 +91,12 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
             timeout: TimeSpan.FromMinutes(1)
         );
 
-        if (result.IsSuccess)
+        if (!result.IsSuccess)
         {
-            await result.Value.DeferAsync();
-            await TryTalkAsync(content, histories);
+            return (false, null);
         }
+
+        await result.Value.DeferAsync();
+        return await TryTalkAsync(content, histories);
     }
 }

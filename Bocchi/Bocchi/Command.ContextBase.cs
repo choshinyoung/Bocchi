@@ -47,13 +47,12 @@ public partial class Command
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(ex, content, histories);
+            return await HandleExceptionAsync(ex, content, histories);
         }
-
-        return (false, null);
     }
 
-    private async Task HandleExceptionAsync(Exception ex, string content, List<History>? histories)
+    private async Task<(bool isSuccess, string? output)> HandleExceptionAsync(Exception ex, string content,
+        List<History>? histories)
     {
         var builder = new ComponentBuilder()
             .WithButton("다시 시도하기", "retry");
@@ -68,10 +67,12 @@ public partial class Command
             timeout: TimeSpan.FromMinutes(1)
         );
 
-        if (result.IsSuccess)
+        if (!result.IsSuccess)
         {
-            await result.Value.DeferAsync();
-            await TryTalkAsync(content, histories);
+            return (false, null);
         }
+
+        await result.Value.DeferAsync();
+        return await TryTalkAsync(content, histories);
     }
 }
