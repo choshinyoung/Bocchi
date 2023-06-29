@@ -62,17 +62,17 @@ public partial class Command
             component: builder.Build()
         );
 
-        var result = await Interactive.NextMessageComponentAsync(
+        var buttonResponse = await Interactive.NextMessageComponentAsync(
             x => x.Message.Id == message.Id,
             timeout: TimeSpan.FromMinutes(1)
         );
 
-        if (!result.IsSuccess)
+        if (!buttonResponse.IsSuccess)
         {
-            return (false, null);
+            return (true, null);
         }
 
-        await result.Value.DeferAsync();
+        await buttonResponse.Value.DeferAsync();
         return await TryTalkAsync(content, histories);
     }
 }

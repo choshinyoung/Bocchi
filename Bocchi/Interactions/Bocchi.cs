@@ -17,16 +17,23 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
     {
         await DeferAsync();
 
-        if (await TryTalkAsync(content) is not (true, var result))
+        var result = await TryTalkAsync(content);
+
+        if (!result.isSuccess)
         {
             await Context.FollowupAsync(StaticMessages.TrialEndMessage);
 
             return;
         }
 
+        if (result.output is null)
+        {
+            return;
+        }
+
         if (BocchiManager.CheckTrialCount(Context.User.Id) is not (true, var isAvailable))
         {
-            await Context.FollowupAsync(result);
+            await Context.FollowupAsync(result.output);
 
             return;
         }
@@ -34,11 +41,11 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
         if (isAvailable)
         {
             await Context.FollowupAsync(
-                $"{result}\n\n{string.Format(StaticMessages.TrialNoticeMessage, BocchiManager.TrialCount, BocchiManager.GetTrialCount(Context.User.Id))}");
+                $"{result.output}\n\n{string.Format(StaticMessages.TrialNoticeMessage, BocchiManager.TrialCount, BocchiManager.GetTrialCount(Context.User.Id))}");
         }
         else
         {
-            await Context.FollowupAsync($"{result}\n\n{StaticMessages.TrialEndMessage}");
+            await Context.FollowupAsync($"{result.output}\n\n{StaticMessages.TrialEndMessage}");
         }
     }
 
@@ -93,7 +100,7 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
 
         if (!result.IsSuccess)
         {
-            return (false, null);
+            return (true, null);
         }
 
         await result.Value.DeferAsync();

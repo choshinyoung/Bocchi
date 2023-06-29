@@ -12,16 +12,23 @@ public partial class Command
 
         var history = await GetHistoriesAsync(Context.Channel, Context.Message.Reference);
 
-        if (await TryTalkAsync(content, history) is not (true, var result))
+        var result = await TryTalkAsync(content, history);
+
+        if (!result.isSuccess)
         {
             await Context.ReplyAsync(StaticMessages.TrialEndMessage);
 
             return;
         }
 
+        if (result.output is null)
+        {
+            return;
+        }
+
         if (BocchiManager.CheckTrialCount(Context.User.Id) is not (true, var isAvailable))
         {
-            await Context.ReplyAsync(result);
+            await Context.ReplyAsync(result.output);
 
             return;
         }
@@ -29,11 +36,11 @@ public partial class Command
         if (isAvailable)
         {
             await Context.ReplyAsync(
-                $"{result}\n\n{string.Format(StaticMessages.TrialNoticeMessage, BocchiManager.TrialCount, BocchiManager.GetTrialCount(Context.User.Id))}");
+                $"{result.output}\n\n{string.Format(StaticMessages.TrialNoticeMessage, BocchiManager.TrialCount, BocchiManager.GetTrialCount(Context.User.Id))}");
         }
         else
         {
-            await Context.ReplyAsync($"{result}\n\n{StaticMessages.TrialEndMessage}");
+            await Context.ReplyAsync($"{result.output}\n\n{StaticMessages.TrialEndMessage}");
         }
     }
 
