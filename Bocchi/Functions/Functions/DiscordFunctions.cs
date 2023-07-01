@@ -9,23 +9,54 @@ public class DiscordFunctions : FunctionModuleBase<FunctionContext>
 {
     [Function("GetUserInfo",
         "Returns the information of current Discord user (including data of username, nickname, isBot, id, discriminator, status, createdAt, activities)")]
-    public string GetUserInfo()
+    public Task<string> GetUserInfo()
     {
         var user = Context.User;
 
-        return $$"""
+        return Task.FromResult($$"""
+                                 {
+                                     username: {{user.Username}},
+                                     nickname: {{user.GetName()}},
+                                     Discriminator: {{user.Discriminator}},
+                                     id: {{user.Id}},
+                                     isBot: {{user.IsBot}},
+                                     createdAt: {{user.CreatedAt.ToKstTime():F}},
+                                     avatarUrl: {{user.GetAvatarUrl()}},
+                                     status: {{user.Status}},
+                                     activities: [{{string.Join(", ", user.Activities.Select(a => $"{a.Type} - {a.Name}: {a.Details}"))}}]
+                                 }
+                                 """);
+    }
+
+    [Function("GetRecentChatting",
+        """
+        Returns recent chat messages for the current discord channel.
+        Use this when users mention about recent chat or recent conversation or when they need information from previous chats.
+        Messages are given in order from most recently sent to least recently sent.
+        Examples of user message: '이게 무슨 뜻이야', '저분이 뭐라고 말한거야', '대화 요약해줘'...
+        """
+    )]
+    public async Task<string> GetRecentChatting(
+        [Param(
+            "The 'page' parameter fetches sets of 30 recent discord messages. 1 for the latest, 2 for the next, etc."
+        )]
+        int page)
+    {
+        var rawMessages = Context.Channel.GetMessagesAsync(30 * page).GetAsyncEnumerator();
+
+        var messages = new List<IMessage>();
+
+        while (await rawMessages.MoveNextAsync())
         {
-            username: {{user.Username}}, 
-            nickname: {{user.GetName()}}, 
-            Discriminator: {{user.Discriminator}}, 
-            id: {{user.Id}}, 
-            isBot: {{user.IsBot}},
-            createdAt: {{user.CreatedAt.ToKstTime():F}},
-            avatarUrl: {{user.GetAvatarUrl()}},
-            status: {{user.Status}},
-            activities: [{{string.Join(", ", user.Activities.Select(a => $"{a.Type} - {a.Name}: {a.Details}"))}}]
+            messages.AddRange(rawMessages.Current);
         }
-        """;
+
+        return string.Join("\n",
+            messages
+                .TakeLast(30)
+                .Where(m => m.Id != Context.Message?.Id)
+                .Select(msg => $"{msg.Author.Username}: {msg.Content}")
+        );
     }
 
     [Function("React", "Add reaction to user message. the function's return value is a success or not.")]

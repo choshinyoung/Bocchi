@@ -101,7 +101,8 @@ public class FunctionManager
 
         var parameterValues = ExtractParameterValues(call, function);
 
-        var result = function.Method.Invoke(moduleInstance, parameterValues.ToArray());
+        var result = await (dynamic)function.Method.Invoke(moduleInstance, parameterValues.ToArray())!;
+
         return GetResultString(result);
     }
 
@@ -141,12 +142,7 @@ public class FunctionManager
             return "";
         }
 
-        if (result.GetType().IsGenericType && result.GetType().GetGenericTypeDefinition() == typeof(Task<>))
-        {
-            result = result.GetType().GetProperty("Result")?.GetValue(result);
-        }
-
-        return result?.ToString() ?? "";
+        return result.ToString() ?? "";
     }
 
     private static string FindType(Type type)
