@@ -33,7 +33,7 @@ public class DiscordFunctions : FunctionModuleBase<FunctionContext>
         Returns recent chat messages for the current discord channel.
         Use this when users mention about recent chat or recent conversation or when they need information from previous chats.
         Messages are given in order from most recently sent to least recently sent.
-        Examples of user message: '이게 무슨 뜻이야', '저분이 뭐라고 말한거야', '대화 요약해줘'...
+        Examples of user message: '대화 요약해줘', '이게 무슨 뜻이야', '저분이 뭐라고 말하는거야', '저 사람이 왜 저런 말을 하는거야?', '저분이 말하는게 뭐야?'...
         """
     )]
     public async Task<string> GetRecentChatting(
@@ -54,6 +54,7 @@ public class DiscordFunctions : FunctionModuleBase<FunctionContext>
         return string.Join("\n",
             messages
                 .TakeLast(30)
+                .Reverse()
                 .Where(m => m.Id != Context.Message?.Id)
                 .Select(msg => $"{msg.Author.Username}: {msg.Content}")
         );
