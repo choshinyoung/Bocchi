@@ -2,14 +2,15 @@
 using Bocchi.Functions.Attributes;
 using Bocchi.Utility;
 using Discord;
+using Discord.WebSocket;
 
 namespace Bocchi.Functions.Functions;
 
 public class DiscordFunctions : FunctionModuleBase<FunctionContext>
 {
-    [Function("GetUserInfo",
-        "Returns the information of current Discord user (including data of username, nickname, isBot, id, discriminator, status, createdAt, activities)")]
-    public Task<string> GetUserInfo()
+    [Function("GetCurrentUserInfo",
+        "Returns the information of current Discord user (including data of username, nickname, discriminator, id, isBot, createdAt, avatarUrl, status, activities)")]
+    public Task<string> GetCurrentUserInfo()
     {
         var user = Context.User;
 
@@ -24,6 +25,51 @@ public class DiscordFunctions : FunctionModuleBase<FunctionContext>
                                      avatarUrl: {{user.GetAvatarUrl()}},
                                      status: {{user.Status}},
                                      activities: [{{string.Join(", ", user.Activities.Select(a => $"{a.Type} - {a.Name}: {a.Details}"))}}]
+                                 }
+                                 """);
+    }
+
+    [Function("GetCurrentServerInfo",
+        "Returns the information of current Discord server (or guild) (including data of name, id, description, createdAt, iconUrl, owner, memberCount, boostCount, events)")]
+    public async Task<string> GetCurrentServerInfo()
+    {
+        var guild = Context.Guild;
+
+        if (guild is null)
+        {
+            return "Request failed: Guild not exist";
+        }
+
+        return $$"""
+                 {
+                     name: {{guild.Name}},
+                     id: {{guild.Id}},
+                     description : {{guild.Description}},
+                     createdAt: {{guild.CreatedAt.ToKstTime():F}},
+                     iconUrl: {{guild.IconUrl}},
+                     owner: {{guild.Owner.Username}},
+                     memberCount: {{guild.MemberCount}},
+                     boostCount: {{guild.PremiumSubscriptionCount}},
+                     events: [{{string.Join(", ", (await guild.GetEventsAsync()).Select(e => $"{e.Type} - {e.Name}: {e.Description}, location: {e.Location}, startTime: {e.StartTime.ToKstTime():F}, status: {e.Status}, userCount: {e.UserCount}"))}}]
+                 }
+                 """;
+    }
+
+    [Function("GetCurrentChannelInfo",
+        "Returns the information of current Discord channel (including data of name, id, topic, createdAt, category, isNsfw)")]
+    public Task<string> GetCurrentChannelInfo()
+    {
+        var channel = Context.Channel;
+        var textChannel = Context.Channel as SocketTextChannel;
+
+        return Task.FromResult($$"""
+                                 {
+                                     name: {{channel.Name}},
+                                     id: {{channel.Id}},
+                                     topic : {{textChannel?.Topic}},
+                                     createdAt: {{channel.CreatedAt.ToKstTime():F}},
+                                     category: {{textChannel?.Category}},
+                                     isNsfw: {{textChannel?.IsNsfw}}
                                  }
                                  """);
     }

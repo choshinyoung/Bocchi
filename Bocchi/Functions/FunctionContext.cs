@@ -9,7 +9,7 @@ public class FunctionContext
 
     public SocketUser User { init; get; }
     public IMessageChannel Channel { init; get; }
-    public SocketGuild Guild { init; get; }
+    public SocketGuild? Guild { init; get; }
 
     public SocketMessage? Message { init; get; }
     public SocketInteraction? Interaction { init; get; }
