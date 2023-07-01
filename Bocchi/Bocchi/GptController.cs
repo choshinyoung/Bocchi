@@ -50,7 +50,12 @@ public class GptController
     private static async Task<string> RequestMessagesAsync(List<ChatMessage> messages, string? apiKey,
         FunctionContext context)
     {
-        using var openAi = new OpenAIService(new OpenAiOptions { ApiKey = apiKey ?? Config.Get("OPENAI_API_KEY") });
+        using var openAi = new OpenAIService(
+            new OpenAiOptions
+            {
+                ApiKey = apiKey ?? Config.Get("OPENAI_API_KEY")
+            }
+        );
 
         for (var stackCount = 0; stackCount < 10; stackCount++)
         {
@@ -71,10 +76,15 @@ public class GptController
     {
         var functions = BocchiManager.FunctionManager.Functions.Select(f => f.Function).ToList();
 
+        var model = (await openAi.ListModel()).Models
+            .Any(m => m.Id == Models.Gpt_4_0613)
+                ? Models.Gpt_4_0613
+                : Models.Gpt_3_5_Turbo_0613;
+
         var response = await openAi.CreateCompletion(new ChatCompletionCreateRequest
         {
             Messages = messages,
-            Model = Models.Gpt_3_5_Turbo_0613,
+            Model = model,
             Functions = functions
         });
 
