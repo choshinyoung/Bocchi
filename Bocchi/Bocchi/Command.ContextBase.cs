@@ -36,7 +36,8 @@ public partial class Command
             User = Context.User,
             Channel = Context.Channel,
             Guild = Context.Guild,
-            Message = Context.Message
+            Message = Context.Message,
+            ApiKey = user.IsTrial ? null : user.OpenAiKey
         };
 
         try

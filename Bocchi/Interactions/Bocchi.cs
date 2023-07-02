@@ -67,7 +67,8 @@ public class Bocchi : InteractionModuleBase<SocketInteractionContext>
             User = Context.User,
             Channel = Context.Channel,
             Guild = Context.Guild,
-            Interaction = Context.Interaction
+            Interaction = Context.Interaction,
+            ApiKey = user.IsTrial ? null : user.OpenAiKey
         };
 
         try

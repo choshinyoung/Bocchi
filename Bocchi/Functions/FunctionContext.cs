@@ -5,6 +5,8 @@ namespace Bocchi.Functions;
 
 public class FunctionContext
 {
+    public string? ApiKey { init; get; }
+
     public History[] History { init; get; }
 
     public SocketUser User { init; get; }
