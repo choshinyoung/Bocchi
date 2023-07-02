@@ -29,30 +29,54 @@ public class DiscordFunctions : FunctionModuleBase<FunctionContext>
                                  """);
     }
 
-    [Function("GetCurrentServerInfo",
-        "Returns the information of current Discord server (or guild) (including data of name, id, description, createdAt, iconUrl, owner, memberCount, boostCount, events)")]
-    public async Task<string> GetCurrentServerInfo()
+    [Function("GetUserInfo",
+        "Returns the Discord user information with given user indicator (including data of username, nickname, discriminator, id, isBot, createdAt, avatarUrl, status, activities)")]
+    public async Task<string> GetUserInfo(
+        [Param("Parameter 'userIndicator' will be user id, username or nickname.")]
+        string userIndicator)
     {
-        var guild = Context.Guild;
-
-        if (guild is null)
+        if (Context.Guild is null)
         {
             return "Request failed: Guild not exist";
         }
 
-        return $$"""
-                 {
-                     name: {{guild.Name}},
-                     id: {{guild.Id}},
-                     description : {{guild.Description}},
-                     createdAt: {{guild.CreatedAt.ToKstTime():F}},
-                     iconUrl: {{guild.IconUrl}},
-                     owner: {{guild.Owner.Username}},
-                     memberCount: {{guild.MemberCount}},
-                     boostCount: {{guild.PremiumSubscriptionCount}},
-                     events: [{{string.Join(", ", (await guild.GetEventsAsync()).Select(e => $"{e.Type} - {e.Name}: {e.Description}, location: {e.Location}, startTime: {e.StartTime.ToKstTime():F}, status: {e.Status}, userCount: {e.UserCount}"))}}]
-                 }
-                 """;
+        SocketUser? user = null;
+
+        if (ulong.TryParse(userIndicator, out var id))
+        {
+            user = Context.Guild.GetUser(id);
+        }
+        else if (Context.Guild.Users.First(g =>
+                     g.Username == userIndicator ||
+                     g.Nickname == userIndicator ||
+                     g.DisplayName == userIndicator)
+                 is not null and var u)
+        {
+            user = u;
+        }
+        else if (await Context.Guild.SearchUsersAsync(userIndicator) is var searchResults)
+        {
+            if (searchResults.Any())
+            {
+                user = Context.Guild.GetUser(searchResults.First().Id);
+            }
+        }
+
+        return user is null
+            ? "Request failed: user not exist"
+            : $$"""
+                {
+                    username: {{user.Username}},
+                    nickname: {{user.GetName()}},
+                    Discriminator: {{user.Discriminator}},
+                    id: {{user.Id}},
+                    isBot: {{user.IsBot}},
+                    createdAt: {{user.CreatedAt.ToKstTime():F}},
+                    avatarUrl: {{user.GetAvatarUrl()}},
+                    status: {{user.Status}},
+                    activities: [{{string.Join(", ", user.Activities.Select(a => $"{a.Type} - {a.Name}: {a.Details}"))}}]
+                }
+                """;
     }
 
     [Function("GetCurrentChannelInfo",
@@ -72,6 +96,81 @@ public class DiscordFunctions : FunctionModuleBase<FunctionContext>
                                      isNsfw: {{textChannel?.IsNsfw}}
                                  }
                                  """);
+    }
+
+    [Function("GetChannelInfo",
+        "Returns the Discord channel information with given user indicator (including data of name, chanelType, id, topic, createdAt, category, isNsfw)")]
+    public Task<string> GetChannelInfo(
+        [Param("Parameter 'channelIndicator' will be channel id or name")]
+        string channelIndicator)
+    {
+        if (Context.Guild is null)
+        {
+            return Task.FromResult("Request failed: Guild not exist");
+        }
+
+        SocketChannel? channel = null;
+
+        if (ulong.TryParse(channelIndicator, out var id))
+        {
+            channel = Context.Guild.GetChannel(id);
+        }
+        else if (Context.Guild.Channels.First(g => g.Name == channelIndicator) is not null and var c)
+        {
+            channel = c;
+        }
+
+        if (channel is null)
+        {
+            return Task.FromResult("Request failed: channel not exist");
+        }
+
+        var messageChannel = channel as IMessageChannel;
+        var textChannel = channel as SocketTextChannel;
+
+        var channelType = channel switch
+        {
+            IVoiceChannel => "VoiceChannel",
+            IThreadChannel => "ThreadChannel",
+            ITextChannel => "TextChannel",
+            IForumChannel => "ForumChannel",
+            _ => "OtherChannel"
+        };
+
+        return Task.FromResult($$"""
+                                 {
+                                     name: {{messageChannel?.Name}},
+                                     id: {{channel.Id}},
+                                     channelType: {{channelType}},
+                                     topic : {{textChannel?.Topic}},
+                                     createdAt: {{channel.CreatedAt.ToKstTime():F}},
+                                     category: {{textChannel?.Category}},
+                                     isNsfw: {{textChannel?.IsNsfw}}
+                                 }
+                                 """);
+    }
+
+    [Function("GetCurrentServerInfo",
+        "Returns the information of current Discord server (or guild) (including data of name, id, description, createdAt, iconUrl, owner, memberCount, boostCount, events)")]
+    public async Task<string> GetCurrentServerInfo()
+    {
+        var guild = Context.Guild;
+
+        return guild is null
+            ? "Request failed: Guild not exist"
+            : $$"""
+                {
+                    name: {{guild.Name}},
+                    id: {{guild.Id}},
+                    description : {{guild.Description}},
+                    createdAt: {{guild.CreatedAt.ToKstTime():F}},
+                    iconUrl: {{guild.IconUrl}},
+                    owner: {{guild.Owner.Username}},
+                    memberCount: {{guild.MemberCount}},
+                    boostCount: {{guild.PremiumSubscriptionCount}},
+                    events: [{{string.Join(", ", (await guild.GetEventsAsync()).Select(e => $"{e.Type} - {e.Name}: {e.Description}, location: {e.Location}, startTime: {e.StartTime.ToKstTime():F}, status: {e.Status}, userCount: {e.UserCount}"))}}]
+                }
+                """;
     }
 
     [Function("GetRecentChatting",

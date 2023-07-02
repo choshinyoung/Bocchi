@@ -10,12 +10,4 @@ public class CommonFunctions : FunctionModuleBase<FunctionContext>
     {
         return Task.FromResult(DateTimeUtility.GetKstDateTime().ToString("F"));
     }
-
-    [Function("Shuffle", "Shuffle given array of given integer array named 'numbers'")]
-    public Task<int[]> Shuffle(int[] numbers)
-    {
-        var random = new Random();
-
-        return Task.FromResult(numbers.OrderBy(_ => random.Next().CompareTo(random.Next())).ToArray());
-    }
 }
